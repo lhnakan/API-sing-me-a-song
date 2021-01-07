@@ -14,7 +14,7 @@ module.exports = {
         allowNull: false,
         references: { model: 'genres', key: 'id'}
       }, 
-      recommendId: {
+      recommendationId: {
         type: Sequelize.INTEGER, 
         allowNull: false,
         references: { model: 'recommendations', key: 'id'}

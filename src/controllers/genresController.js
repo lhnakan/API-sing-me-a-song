@@ -1,6 +1,6 @@
 const Genre = require('../models/Genre');
 
-const  sanitiseObjStrings  = require('../utils/stringStrip');
+const sanitiseObjStrings  = require('../utils/stringStrip');
 const genreSchemas = require('../schemas/genreSchemas');
 
 async function create(req, res) {
@@ -16,7 +16,7 @@ async function create(req, res) {
         if(checkGenre) return res.sendStatus(409);
 
         const result = await Genre.create({ name });
-        return res.status(201).send(name);
+        return res.status(201).send(result);
     } catch(err) {
         console.log(err);
         return res.sendStatus(500);
