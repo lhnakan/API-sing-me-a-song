@@ -105,7 +105,7 @@ class recommendationsController {
             include: {
                 model: Genre, 
                 through: { attributes: [] },
-                where: { id: id }
+                where: { id }
             },
             where: { 
                 score: { 
@@ -116,7 +116,6 @@ class recommendationsController {
         });
         
         if(!result) {
-            console.log('entrou')
             result = await Recommendation.findOne({
                 include: {
                     model: Genre, 
@@ -127,8 +126,15 @@ class recommendationsController {
             });
             if(!result) throw new NotFound();
         };
+
+        const toSend = await Recommendation.findByPk(result.id, {
+            include: {
+                model: Genre, 
+                through: { attributes: [] }
+            }
+        })
         
-        return result;
+        return toSend;
     }
 
     async topScores(amount) {

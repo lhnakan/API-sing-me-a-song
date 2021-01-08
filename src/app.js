@@ -1,4 +1,5 @@
 require('dotenv').config();
+require('./utils/loadRelationships');
 const express = require('express');
 
 const genresRouter = require('./routers/genresRouter');

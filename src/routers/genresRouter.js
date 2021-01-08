@@ -3,6 +3,7 @@ const router = require('express').Router();
 const genresController = require('../controllers/genresController');
 const sanitiseObjStrings  = require('../utils/stringStrip');
 const genreSchemas = require('../schemas/genreSchemas');
+const NotFound = require('../errors/NotFound');
 
 router.post("/", async (req, res) => {
     const sanitisedBody = sanitiseObjStrings(req.body);
@@ -31,6 +32,20 @@ router.get("/", async (req, res) => {
     }  catch(err) {
         console.log(err);
         return res.sendStatus(500);
+    }
+});
+
+router.get("/:id", async (req, res) => {
+    const id = req.params.id;
+    try {
+        const result = await genresController.getGenreRecommendations(id);
+        return res.status(200).send(result);
+    }  catch(err) {
+        if(err instanceof NotFound) {
+            return res.sendStatus(404);
+        } else {
+            return res.sendStatus(500);
+        }
     }
 });
 

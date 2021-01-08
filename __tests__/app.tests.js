@@ -187,7 +187,7 @@ describe("GET /recommendations/genres/:id/random", () => {
     });
 });
 
-describe("POST /:id/upvote", () => {
+describe("POST /recommendations/:id/upvote", () => {
     it("Should return 404 id in params is invalid", async () => {
         const response = await agent.post(`/recommendations/${0}/upvote`);
 
@@ -213,7 +213,7 @@ describe("POST /:id/upvote", () => {
     });
 });
 
-describe("POST /:id/downvote", () => {
+describe("POST /recommendations/:id/downvote", () => {
     it("Should return 404 id in params is invalid", async () => {
         const response = await agent.post(`/recommendations/${0}/upvote`);
 
@@ -246,5 +246,101 @@ describe("POST /:id/downvote", () => {
         const response = await agent.post(`/recommendations/${recommendationIdTest}/downvote`);
 
         expect(response.status).toBe(200);
+    });
+});
+
+describe("GET /recommendations/top/:amount", () => {
+    it("Should return 404 if empty recommends", async () => {
+        const response = await agent.get(`/recommendations/top/${1}`);
+
+        expect(response.status).toBe(404);
+    });
+
+    it("Should return 200 if recive in corect quantity and order", async () => {
+        const recommendTest = await db.query(`
+            INSERT INTO recommendations (name, url, score) 
+            VALUES ('Music1', 'https://www.youtube.com/', 5 ), ('Music2', 'https://www.youtube.cm', 10) 
+            RETURNING *;
+        `);
+        const genresTest = await db.query(`
+            INSERT INTO genres (name) 
+            VALUES ('Lofi') 
+            RETURNING *;
+        `);
+        await db.query(`
+            INSERT INTO genre_recommend ("genreId", "recommendationId") 
+            VALUES (${genresTest.rows[0].id}, ${recommendTest.rows[0].id}), (${genresTest.rows[0].id}, ${recommendTest.rows[1].id});
+        `);
+
+        const response = await agent.get(`/recommendations/top/${2}`);
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(
+            expect.arrayContaining([
+                {
+                    id: recommendTest.rows[1].id, 
+                    name: "Music2", 
+                    score: 10, 
+                    url: "https://www.youtube.cm",
+                    genres: [{ 
+                        id: genresTest.rows[0].id, 
+                        name: "Lofi"
+                    }]
+                },
+                {
+                    id: recommendTest.rows[0].id, 
+                    name: "Music1", 
+                    score: 5, 
+                    url: "https://www.youtube.com/",
+                    genres: [{ 
+                        id: genresTest.rows[0].id, 
+                        name: "Lofi"
+                    }]
+                }
+            ])
+        );
+        genreIdTest = genresTest.rows[0].id;
+    })   
+});
+
+describe("GET /genres/:id", () => {
+    it("Should return 404 if wrong id", async () => {
+        const response = await agent.get(`/genres/${0}`);
+
+        expect(response.status).toBe(404);
+    });
+
+    it("Should return 200 if recive corectly", async () => {
+        const response = await agent.get(`/genres/${genreIdTest}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                score: 15,
+                id: genreIdTest,
+                name: "Lofi",
+                recommendations:[
+                    {
+                        id: response.body.recommendations[0].id, 
+                        name: "Music1", 
+                        score: 5, 
+                        url: "https://www.youtube.com/",
+                        genres: [{ 
+                            id: genreIdTest, 
+                            name: "Lofi"
+                        }]
+                    },
+                    {
+                        id: response.body.recommendations[1].id, 
+                        name: "Music2", 
+                        score: 10, 
+                        url: "https://www.youtube.cm",
+                        genres: [{ 
+                            id: genreIdTest, 
+                            name: "Lofi"
+                        }]
+                    }
+                ]
+            })
+        );
     });
 });

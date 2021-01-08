@@ -96,11 +96,7 @@ router.get("/top/:amount", async (req, res) => {
         if(err instanceof NotFound) {
             return res.sendStatus(404);
         } else {
-            if(err instanceof NotFound) {
-                return res.sendStatus(404);
-            } else {
-                return res.sendStatus(500);
-            }
+            return res.sendStatus(500);
         }
     }
 });

@@ -1,9 +1,6 @@
 const { Sequelize } = require('sequelize');
 const sequelize = require('../utils/database');
 
-const Genre = require('./Genre');
-const GenreRecommend = require('./GenreRecommend');
-
 class Recommendation extends Sequelize.Model {};
 
 Recommendation.init(
@@ -32,7 +29,5 @@ Recommendation.init(
         modelName: "recommendation"
     }
 );
-
-Recommendation.belongsToMany(Genre, { through: GenreRecommend });
 
 module.exports = Recommendation;
