@@ -2,7 +2,7 @@ const Recommendation = require('../models/Recommendation');
 const Genre = require('../models/Genre');
 const GenreRecommend = require('../models/GenreRecommend');
 const helper = require('../helpers/recommendationsHelper');
-const NotFoundId = require('../errors/NotFoundId');
+const NotFound = require('../errors/NotFound');
 const Op = require('sequelize').Op;
 const Sequelize = require('sequelize');
 
@@ -43,7 +43,7 @@ class recommendationsController {
                 through: { attributes: [] }
             },
         });        
-        if(!result) throw new NotFoundId();
+        if(!result) throw new NotFound();
         
         result.score += 1;
         return await result.save();
@@ -56,7 +56,7 @@ class recommendationsController {
                 through: { attributes: [] }
             }
         });
-        if(!result) throw new NotFoundId();
+        if(!result) throw new NotFound();
 
         result.score -= 1;
         if(result.score < -5){
@@ -71,7 +71,7 @@ class recommendationsController {
         const drawScore = helper.draw(10, 1);
         const range = drawScore > 3 ? [11, 999] : [-5, 10] ;
         
-        let results = await Recommendation.findOne({
+        let result = await Recommendation.findOne({
             where: { 
                 score: { 
                     [Op.between]: range
@@ -83,25 +83,25 @@ class recommendationsController {
             },
             order: [Sequelize.fn('RANDOM')]
         });
-        if(!results) {
-            results = await Recommendation.findOne({
+        if(!result) {
+            result = await Recommendation.findOne({
                 include: {
                     model: Genre, 
                     through: { attributes: [] }
                 },
                 order: [Sequelize.fn('RANDOM')]
             });
-            if(!results) throw new NotFoundId();
+            if(!result) throw new NotFound();
         };
 
-        return results ;
+        return result ;
     }
 
     async randomInGenre(id){
         const drawScore = helper.draw(10, 1);
         const range = drawScore > 3 ? [11, 999] : [-5, 10] ;
         
-        let results = await Recommendation.findOne({
+        let result = await Recommendation.findOne({
             include: {
                 model: Genre, 
                 through: { attributes: [] },
@@ -115,9 +115,9 @@ class recommendationsController {
             order: [Sequelize.fn('RANDOM')]
         });
         
-        if(!results) {
+        if(!result) {
             console.log('entrou')
-            results = await Recommendation.findOne({
+            result = await Recommendation.findOne({
                 include: {
                     model: Genre, 
                     where: { id }, 
@@ -125,10 +125,25 @@ class recommendationsController {
                 }, 
                 order: [Sequelize.fn('RANDOM')]
             });
-            if(!results) throw new NotFoundId();
+            if(!result) throw new NotFound();
         };
         
-        return results;
+        return result;
+    }
+
+    async topScores(amount) {
+        const result = await Recommendation.findAll({
+            include: {
+                model: Genre,
+                through: { attributes: [] }
+            },
+            limit: amount,
+            order: [
+                ['score', 'DESC'] 
+            ]
+        })
+        if(result.length === 0) throw new NotFound();
+        return result;
     }
 }
 

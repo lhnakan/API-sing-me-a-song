@@ -4,7 +4,7 @@ const recommendationsController = require('../controllers/recommendationsControl
 const genresController = require('../controllers/genresController');
 const recommendationSchemas = require('../schemas/recommendationSchemas');
 const sanitiseObjStrings = require('../utils/stringStrip');
-const NotFoundId = require('../errors/NotFoundId');
+const NotFound = require('../errors/NotFound');
 
 router.post("/", async (req, res) => { 
     const sanitisedBody = sanitiseObjStrings(req.body);
@@ -34,7 +34,7 @@ router.post("/:id/upvote", async (req, res) => {
         const result = await recommendationsController.upScore(id)
         res.status(201).send(result);
     }catch(err) {
-        if(err instanceof NotFoundId) {
+        if(err instanceof NotFound) {
             return res.sendStatus(404);
         } else {
             return res.sendStatus(500);
@@ -50,7 +50,7 @@ router.post("/:id/downvote", async (req, res) => {
 
         res.status(201).send(result);
     }catch(err) {
-        if(err instanceof NotFoundId) {
+        if(err instanceof NotFound) {
             return res.sendStatus(404);
         } else {
             return res.sendStatus(500);
@@ -63,7 +63,7 @@ router.get("/random", async (req, res) => {
         const result = await recommendationsController.random();
         res.send(result)
     } catch(err) {
-        if(err instanceof NotFoundId) {
+        if(err instanceof NotFound) {
             return res.sendStatus(404);
         } else {
             console.log(err)
@@ -78,11 +78,29 @@ router.get("/genres/:id/random", async (req, res) => {
         const result = await recommendationsController.randomInGenre(id);
         res.status(200).send(result)
     } catch(err) {
-        if(err instanceof NotFoundId) {
+        if(err instanceof NotFound) {
             return res.sendStatus(404);
         } else {
             console.log(err)
             return res.sendStatus(500);
+        }
+    }
+});
+
+router.get("/top/:amount", async (req, res) => {
+    const amount = req.params.amount;
+    try {
+        const result = await recommendationsController.topScores(amount);
+        res.status(200).send(result)
+    } catch(err) {
+        if(err instanceof NotFound) {
+            return res.sendStatus(404);
+        } else {
+            if(err instanceof NotFound) {
+                return res.sendStatus(404);
+            } else {
+                return res.sendStatus(500);
+            }
         }
     }
 });
