@@ -11,6 +11,9 @@ const db = new Pool({
   connectionString: process.env.DATABASE_URL,
 });
 
+let genreIdTest;
+let recommendationIdTest;
+
 beforeAll(async () => {
     await db.query("DELETE FROM genre_recommend;");
     await db.query("DELETE FROM genres;");
@@ -20,4 +23,228 @@ beforeAll(async () => {
 afterAll(async () => {
     await db.end();
     await sequelize.close();
+});
+
+describe("POST /genres", () => {
+    it("Should return 422 if there is no name", async () => {
+        const body = { name: ""};
+
+        const response = await agent.post("/genres").send(body);
+
+        expect(response.status).toBe(422);
+    });
+
+    it("Should return 422 if there is invalid characters", async () => {
+        const body = { name: "<Brega"};
+
+        const response = await agent.post("/genres").send(body);
+
+        expect(response.status).toBe(422);
+    });
+
+    it("Should return 201 and create genre correctly", async () => {
+        const body = { name: "Brega Funk"};
+
+        const response = await agent.post("/genres").send(body);
+
+        expect(response.status).toBe(201);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                id: response.body.id, 
+                name: "Brega Funk"
+            })
+        );
+        genreIdTest = response.body.id;
+    });
+})
+
+describe("GET /genres", () => {
+    it("Should return 200 and all genres", async () => {
+        const response = await agent.get("/genres");
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(
+            expect.arrayContaining([
+                { 
+                    id: response.body[0].id, 
+                    name: "Brega Funk"
+                }
+            ])
+        );
+    });
+})
+
+describe("POST /recommendations", () => {
+    it("Should return 422 if there any element empty", async () => {
+        const body = { 
+            name: "", 
+            genresIds: [genreIdTest],
+            youtubeLink: "https://www.youtube.com/"
+        };
+        const response = await agent.post("/recommendations").send(body);
+
+        expect(response.status).toBe(422);
+    });
+
+    it("Should return 406 if the genresIds are invalid", async () => {
+        const body = { 
+            name: "musica", 
+            genresIds: [0],
+            youtubeLink: "https://www.youtube.com/"
+        };
+        const response = await agent.post("/recommendations").send(body);
+
+        expect(response.status).toBe(406);
+    });
+
+    it("Should return 201 if create recommendation", async () => {
+        const body = { 
+            name: "musica", 
+            genresIds: [genreIdTest],
+            youtubeLink: "https://www.youtube.com/"
+        };
+        const response = await agent.post("/recommendations").send(body);
+
+        expect(response.status).toBe(201);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                id: response.body.id, 
+                name: "musica", 
+                score: 0, 
+                url: "https://www.youtube.com/"
+            })
+        );
+        recommendationIdTest = response.body.id;
+    });
+
+    it("Should return 200 if recommendation alredy exist", async () => {
+        const body = { 
+            name: "musica", 
+            genresIds: [genreIdTest],
+            youtubeLink: "https://www.youtube.com/"
+        };
+        const response = await agent.post("/recommendations").send(body);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                id: response.body.id, 
+                name: "musica", 
+                score: 0, 
+                url: "https://www.youtube.com/",
+                genres: [{ 
+                    id: genreIdTest, 
+                    name: "Brega Funk"
+                }]
+            })
+        );
+    });
+})
+
+describe("GET /recommendations/random", () => {
+    it("Should return 200 if create recommendation", async () => {
+        const response = await agent.get("/recommendations/random");
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                id: response.body.id, 
+                name: "musica", 
+                score: 0, 
+                url: "https://www.youtube.com/",
+                genres: [{ 
+                    id: genreIdTest, 
+                    name: "Brega Funk"
+                }]
+            })
+        );
+    });
+});
+
+describe("GET /recommendations/genres/:id/random", () => {
+    it("Should return 404 id in params is invalid", async () => {
+        const response = await agent.get(`/recommendations/genres/${0}/random`);
+
+        expect(response.status).toBe(404);
+    });
+
+    it("Should return 200 if create recommendation", async () => {
+        const response = await agent.get(`/recommendations/genres/${genreIdTest}/random`);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                id: response.body.id, 
+                name: "musica", 
+                score: 0, 
+                url: "https://www.youtube.com/",
+                genres: [{ 
+                    id: genreIdTest, 
+                    name: "Brega Funk"
+                }]
+            })
+        );
+    });
+});
+
+describe("POST /:id/upvote", () => {
+    it("Should return 404 id in params is invalid", async () => {
+        const response = await agent.post(`/recommendations/${0}/upvote`);
+
+        expect(response.status).toBe(404);
+    });
+
+    it("Should return 201 if add a vote", async () => {
+        const response = await agent.post(`/recommendations/${recommendationIdTest}/upvote`);
+
+        expect(response.status).toBe(201);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                id: response.body.id, 
+                name: "musica", 
+                score: 1, 
+                url: "https://www.youtube.com/",
+                genres: [{ 
+                    id: genreIdTest, 
+                    name: "Brega Funk"
+                }]
+            })
+        );
+    });
+});
+
+describe("POST /:id/downvote", () => {
+    it("Should return 404 id in params is invalid", async () => {
+        const response = await agent.post(`/recommendations/${0}/upvote`);
+
+        expect(response.status).toBe(404);
+    });
+
+    it("Should return 201 if down a vote", async () => {
+        const response = await agent.post(`/recommendations/${recommendationIdTest}/downvote`);
+
+        expect(response.status).toBe(201);
+        expect(response.body).toEqual(
+            expect.objectContaining({
+                id: response.body.id, 
+                name: "musica", 
+                score: 0, 
+                url: "https://www.youtube.com/",
+                genres: [{ 
+                    id: genreIdTest, 
+                    name: "Brega Funk"
+                }]
+            })
+        );
+    });
+
+    it("Should return 200 if delete recommendation", async () => {
+        const queryResult = await db.query(`
+            UPDATE recommendations 
+            SET score = -5
+        `);
+        const response = await agent.post(`/recommendations/${recommendationIdTest}/downvote`);
+
+        expect(response.status).toBe(200);
+    });
 });

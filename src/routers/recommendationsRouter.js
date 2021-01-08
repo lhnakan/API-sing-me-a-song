@@ -46,7 +46,9 @@ router.post("/:id/downvote", async (req, res) => {
     const id = req.params.id;
     try {
         const result = await recommendationsController.downScore(id);
-        res.status(200).send(result);
+        if(!result) return res.sendStatus(200);
+
+        res.status(201).send(result);
     }catch(err) {
         if(err instanceof NotFoundId) {
             return res.sendStatus(404);
@@ -74,7 +76,7 @@ router.get("/genres/:id/random", async (req, res) => {
     const id = req.params.id;
     try {
         const result = await recommendationsController.randomInGenre(id);
-        res.send(result)
+        res.status(200).send(result)
     } catch(err) {
         if(err instanceof NotFoundId) {
             return res.sendStatus(404);
