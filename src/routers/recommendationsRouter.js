@@ -70,4 +70,19 @@ router.get("/random", async (req, res) => {
     }
 });
 
+router.get("/genres/:id/random", async (req, res) => {
+    const id = req.params.id;
+    try {
+        const result = await recommendationsController.randomInGenre(id);
+        res.send(result)
+    } catch(err) {
+        if(err instanceof NotFoundId) {
+            return res.sendStatus(404);
+        } else {
+            console.log(err)
+            return res.sendStatus(500);
+        }
+    }
+});
+
 module.exports = router;

@@ -4,6 +4,7 @@ const GenreRecommend = require('../models/GenreRecommend');
 const helper = require('../helpers/recommendationsHelper');
 const NotFoundId = require('../errors/NotFoundId');
 const Op = require('sequelize').Op;
+const Sequelize = require('sequelize');
 
 class recommendationsController {
     async create(name, youtubeLink, checkedIds) {
@@ -23,7 +24,7 @@ class recommendationsController {
                 recommendationId: recommend.id
             })
         } else {
-            const formatedArray = helper.formatToAddInTable(checkGenre, recommend.id)
+            const formatedArray = helper.formatToAddInTable(checkedIds, recommend.id)
             await GenreRecommend.bulkCreate(formatedArray)
         }
         const result = await Recommendation.findByPk(recommend.id, {
@@ -70,20 +71,64 @@ class recommendationsController {
         const drawScore = helper.draw(10, 1);
         const range = drawScore > 3 ? [11, 999] : [-5, 10] ;
         
-        let results = await Recommendation.findAndCountAll({
+        let results = await Recommendation.findOne({
             where: { 
                 score: { 
                     [Op.between]: range
                 } 
-            }
+            },
+            include: {
+                model: Genre, 
+                through: { attributes: [] }
+            },
+            order: [Sequelize.fn('RANDOM')]
         });
-        if(!results.count) {
-            results = await Recommendation.findAndCountAll();
-            if(!results.count) throw new NotFoundId();
+        if(!results) {
+            results = await Recommendation.findOne({
+                include: {
+                    model: Genre, 
+                    through: { attributes: [] }
+                },
+                order: [Sequelize.fn('RANDOM')]
+            });
+            if(!results) throw new NotFoundId();
         };
 
-        const drawIndex = helper.draw(results.count, 0);
-        return results.rows[drawIndex] ;
+        return results ;
+    }
+
+    async randomInGenre(id){
+        const drawScore = helper.draw(10, 1);
+        const range = drawScore > 3 ? [11, 999] : [-5, 10] ;
+        
+        let results = await Recommendation.findOne({
+            include: {
+                model: Genre, 
+                through: { attributes: [] },
+                where: { id: id }
+            },
+            where: { 
+                score: { 
+                    [Op.between]: range
+                },
+            }, 
+            order: [Sequelize.fn('RANDOM')]
+        });
+        
+        if(!results) {
+            console.log('entrou')
+            results = await Recommendation.findOne({
+                include: {
+                    model: Genre, 
+                    where: { id }, 
+                    through: { attributes: [] }
+                }, 
+                order: [Sequelize.fn('RANDOM')]
+            });
+            if(!results) throw new NotFoundId();
+        };
+        
+        return results;
     }
 }
 
