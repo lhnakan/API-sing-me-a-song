@@ -17,9 +17,7 @@ class genresController {
     verifyGenres(genresIds) {
         return Genre.findAll({
             where: {
-                id: {
-                    [Op.in]: genresIds
-                }
+                id:  genresIds
             }
         })
     }
