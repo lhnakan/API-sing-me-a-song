@@ -31,7 +31,8 @@ class genresController {
                 through: { attributes: [] }, 
                 include: {
                     model: Genre,
-                    through: { attributes: [] }
+                    through: { attributes: [] },
+                    required: false
                 }
             },
             where: { id }
